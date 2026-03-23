@@ -4,8 +4,8 @@
 class Get < Formula
   desc "Download YouTube videos and audio from the terminal"
   homepage "https://github.com/rayinuk13/get"
-  url "https://github.com/rayinuk13/get/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "4e61d2676799e012ed238ec14ef1d221c6aba0b28456e2563c892b299dd99b67"
+  url "https://github.com/rayinuk13/get/archive/9659ead56e4b18818f86b87720efff1a5ddb9a81.tar.gz"
+  sha256 "1e8d89abfc12eaf047da291b6188af0cea2138f8616a66a4693ab55bddf005ac"
   license "MIT"
   version "1.0.0"
 
