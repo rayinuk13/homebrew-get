@@ -20,6 +20,9 @@ jobs:
         # Pin to a specific upstream revision for reproducible CI behavior.
         uses: Homebrew/actions/setup-homebrew@8f52032f943acddc1c5670f437b94e031e78afc0
 
+      - name: Untap existing remote if present
+        run: brew untap rayinuk13/get || true
+
       - name: Tap local checkout
         run: brew tap rayinuk13/get "file://${GITHUB_WORKSPACE}"
 
