@@ -15,11 +15,16 @@ import os
 import shutil
 import subprocess
 import sys
+from urllib.parse import parse_qs, urlparse
 
 VERSION = "1.0.0"
 DEFAULT_AUDIO_QUALITY = "192"
 DEFAULT_VIDEO_QUALITY = "1080"
 MAX_VIDEO_HEIGHT = "2160"
+VALID_AUDIO_QUALITIES = {"128", "192", "320"}
+DEFAULT_ARTIST = "Unknown Artist"
+DEFAULT_TITLE = "Unknown Title"
+METADATA_YEAR_PATTERN = r"upload_date:(?P<year>\d{4}).*"
 
 BANNER = r"""
   __ _  ___| |_
@@ -100,27 +105,39 @@ def parse_args(args):
     if mode == "mp3":
         if quality is None:
             quality = DEFAULT_AUDIO_QUALITY
-        elif quality not in {"128", "192", "320"}:
+        elif quality not in VALID_AUDIO_QUALITIES:
             print("[get] error: audio quality must be one of 128, 192, or 320")
             sys.exit(1)
     elif quality is None:
         quality = MAX_VIDEO_HEIGHT if mode == "best" else DEFAULT_VIDEO_QUALITY
     elif quality.lower() == "4k":
         quality = MAX_VIDEO_HEIGHT
-    elif not quality.isdigit() or not (360 <= int(quality) <= int(MAX_VIDEO_HEIGHT)):
-        print("[get] error: video quality must be 360-2160 or 4k")
+    elif not quality.isdigit():
+        print("[get] error: video quality must be a number between 360 and 2160, or 4k")
         sys.exit(1)
+    else:
+        quality_int = int(quality)
+        if quality_int < 360 or quality_int > int(MAX_VIDEO_HEIGHT):
+            print("[get] error: video quality out of range; choose 360-2160 or 4k")
+            sys.exit(1)
 
     playlist_items = None
     if parsed.playlist_range:
-        if "-" not in parsed.playlist_range:
+        if parsed.playlist_range.count("-") != 1:
             print("[get] error: --range must be in start-end format, e.g. 1-10")
             sys.exit(1)
         start, end = parsed.playlist_range.split("-", 1)
-        if not start.isdigit() or not end.isdigit() or int(start) < 1 or int(end) < int(start):
-            print("[get] error: invalid --range values")
+        if not start.isdigit() or not end.isdigit():
+            print("[get] error: --range values must be numeric (example: 1-10)")
             sys.exit(1)
-        playlist_items = f"{int(start)}-{int(end)}"
+        start_num, end_num = int(start), int(end)
+        if start_num < 1:
+            print("[get] error: --range start must be >= 1")
+            sys.exit(1)
+        if end_num < start_num:
+            print("[get] error: --range end must be >= start")
+            sys.exit(1)
+        playlist_items = f"{start_num}-{end_num}"
 
     return {
         "mode": mode,
@@ -133,19 +150,28 @@ def parse_args(args):
 
 
 def build_command(config, out_dir):
-    out_template = f"{out_dir}/%(uploader|Unknown Artist)s - %(title|Unknown Title)s.%(ext)s"
+    out_template = f"{out_dir}/%(uploader|{DEFAULT_ARTIST})s - %(title|{DEFAULT_TITLE})s.%(ext)s"
     common = [
         "yt-dlp",
         "--windows-filenames",
         "--add-metadata",
         "--progress",
-        "--progress-template",
-        "download:%(progress._percent_str)s at %(progress._speed_str)s ETA %(progress._eta_str)s",
         "--concurrent-fragments",
         str(config["threads"]),
     ]
 
-    if config["playlist_all"] or config["playlist_items"]:
+    parsed_url = urlparse(config["url"])
+    query = parse_qs(parsed_url.query)
+    hostname = (parsed_url.hostname or "").lower()
+    is_youtube_domain = (
+        hostname in {"youtube.com", "youtu.be", "youtube-nocookie.com"}
+        or hostname.endswith(".youtube.com")
+        or hostname.endswith(".youtube-nocookie.com")
+    )
+    is_playlist_url = is_youtube_domain and (
+        "list" in query or parsed_url.path.rstrip("/").endswith("/playlist")
+    )
+    if config["playlist_all"] or config["playlist_items"] or is_playlist_url:
         common.append("--yes-playlist")
         if config["playlist_items"]:
             common.extend(["--playlist-items", config["playlist_items"]])
@@ -162,18 +188,21 @@ def build_command(config, out_dir):
             "--parse-metadata",
             "playlist_title:%(album)s",
             "--parse-metadata",
-            "upload_date:(?P<release_year>\\d{4}).*",
+            METADATA_YEAR_PATTERN,
             "--output",
             out_template,
             config["url"],
         ]
 
-    height = config["quality"]
-    if mode == "best":
-        height = MAX_VIDEO_HEIGHT
+    height = MAX_VIDEO_HEIGHT if mode == "best" else config["quality"]
+    format_chain = (
+        f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]/"
+        f"best[height<={height}][ext=mp4]/"
+        f"best[height<={height}]/best"
+    )
     return common + [
         "--format",
-        f"bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]/best[height<={height}][ext=mp4]/best[height<={height}]/best",
+        format_chain,
         "--merge-output-format",
         "mp4",
         "--embed-thumbnail",
