@@ -1,0 +1,17 @@
+{
+  "name": "homebrew-get-cli",
+  "version": "1.0.0",
+  "description": "Download YouTube videos and audio from the terminal",
+  "license": "MIT",
+  "bin": {
+    "get": "bin/get.js"
+  },
+  "files": [
+    "bin/get.js",
+    "get.py",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

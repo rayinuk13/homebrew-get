@@ -1,3 +1,12 @@
+Metadata-Version: 2.4
+Name: homebrew-get-cli
+Version: 1.0.0
+Summary: Download YouTube videos and audio from the terminal
+Author: rayinuk13
+License-Expression: MIT
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+
 # homebrew-get
 
 Homebrew tap for [get](https://github.com/rayinuk13/get) — download YouTube videos and audio from the terminal.
