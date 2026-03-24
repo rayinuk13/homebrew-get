@@ -17,7 +17,7 @@ import subprocess
 import sys
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 DEFAULT_AUDIO_QUALITY = "192"
 DEFAULT_VIDEO_QUALITY = "1080"
 MAX_VIDEO_HEIGHT = "2160"

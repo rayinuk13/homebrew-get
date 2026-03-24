@@ -1,6 +1,6 @@
 {
   "name": "homebrew-get-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Download YouTube videos and audio from the terminal",
   "license": "MIT",
   "bin": {
