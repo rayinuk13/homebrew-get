@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "homebrew-get-cli"
+version = "1.0.0"
+description = "Download YouTube videos and audio from the terminal"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "rayinuk13" }]
+dependencies = []
+
+[project.scripts]
+get = "get:main"
+
+[tool.setuptools]
+py-modules = ["get"]

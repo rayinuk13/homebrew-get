@@ -20,14 +20,22 @@ jobs:
         # Pin to a specific upstream revision for reproducible CI behavior.
         uses: Homebrew/actions/setup-homebrew@8f52032f943acddc1c5670f437b94e031e78afc0
 
+      - name: Tap local checkout
+        run: brew tap rayinuk13/get "file://${GITHUB_WORKSPACE}"
+
       - name: Run brew style
         run: brew style Formula/get.rb
 
       - name: Run brew audit
-        run: brew audit --strict --online Formula/get.rb
+        run: brew audit --strict --online rayinuk13/get/get
 
       - name: Build and install formula
-        run: brew install --build-from-source Formula/get.rb
+        run: brew install --build-from-source rayinuk13/get/get
 
       - name: Run formula test
         run: brew test get
+
+      - name: Verify uninstall and untap
+        run: |
+          brew uninstall --force get
+          brew untap rayinuk13/get

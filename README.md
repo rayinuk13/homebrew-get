@@ -4,9 +4,23 @@ Homebrew tap for [get](https://github.com/rayinuk13/get) — download YouTube vi
 
 ## Install
 
+### Homebrew
+
 ```bash
 brew tap rayinuk13/get
 brew install get
+```
+
+### pip
+
+```bash
+pip install "git+https://github.com/rayinuk13/homebrew-get.git"
+```
+
+### npm
+
+```bash
+npm install -g github:rayinuk13/homebrew-get
 ```
 
 ## Usage
@@ -16,11 +30,9 @@ get -mp3 <youtube-url>   # Download as MP3
 get -mp4 <youtube-url>   # Download as MP4
 ```
 
-## Allow Copilot to test `brew`
+## Troubleshooting `brew`
 
-The coding sandbox must have Homebrew installed and available on `PATH`. In my previous run, `brew` was not installed, so install/uninstall/tap checks could not run.
-
-If you want these checks in CI, run them on a macOS runner (or any runner with Homebrew preinstalled), for example:
+If Homebrew install/uninstall checks fail in CI, run the same lifecycle locally:
 
 ```bash
 brew tap rayinuk13/get
@@ -29,3 +41,5 @@ brew test get
 brew uninstall get
 brew untap rayinuk13/get
 ```
+
+In this coding sandbox, `brew` is not available on `PATH`, so Homebrew validation must run in CI on a macOS runner.
