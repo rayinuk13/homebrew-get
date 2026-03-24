@@ -43,7 +43,7 @@ def check_deps():
             missing.append(dep)
     if missing:
         print(f"[get] missing dependencies: {', '.join(missing)}")
-        print("      install with: brew install " + " ".join(missing))
+        print("      install the missing tools with your system package manager.")
         sys.exit(1)
 
 
