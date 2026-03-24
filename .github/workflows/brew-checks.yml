@@ -1,0 +1,29 @@
+name: Brew Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  brew-checks:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Run brew style
+        run: brew style Formula/get.rb
+
+      - name: Run brew audit
+        run: brew audit --strict --online Formula/get.rb
+
+      - name: Build and install formula
+        run: brew install --build-from-source Formula/get.rb
+
+      - name: Run formula test
+        run: brew test get
