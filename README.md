@@ -26,8 +26,12 @@ npm install -g github:rayinuk13/homebrew-get
 ## Usage
 
 ```bash
-get -mp3 <youtube-url>   # Download as MP3
-get -mp4 <youtube-url>   # Download as MP4
+get --mp3 <youtube-url>                      # Audio only (MP3)
+get --mp4 --quality 1080 <youtube-url>       # Video MP4 with target quality
+get --best <youtube-url>                     # Auto highest quality with fallback
+get <playlist-url> --all                     # Download full playlist
+get <playlist-url> --range 1-10              # Download playlist range
+get --mp3 --quality 320 --threads 5 <url>    # High-quality audio with faster fragments
 ```
 
 ## Troubleshooting `brew`
