@@ -1,8 +1,0 @@
-README.md
-get.py
-pyproject.toml
-homebrew_get_cli.egg-info/PKG-INFO
-homebrew_get_cli.egg-info/SOURCES.txt
-homebrew_get_cli.egg-info/dependency_links.txt
-homebrew_get_cli.egg-info/entry_points.txt
-homebrew_get_cli.egg-info/top_level.txt
