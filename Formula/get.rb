@@ -9,6 +9,7 @@ class Get < Formula
   sha256 "a89bdf99d5a212a88ecbe08fb06244e5da74282e3dab165804777381bef03888"
   license "MIT"
 
+  depends_on "aria2"
   depends_on "ffmpeg"
   depends_on "python@3.12"
   depends_on "yt-dlp"
