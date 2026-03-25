@@ -15,6 +15,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from urllib.parse import parse_qs, urlparse
 
 VERSION = "1.0.2"
@@ -25,6 +26,13 @@ VALID_AUDIO_QUALITIES = {"128", "192", "320"}
 DEFAULT_ARTIST = "Unknown Artist"
 DEFAULT_TITLE = "Unknown Title"
 METADATA_YEAR_PATTERN = r"upload_date:(?P<year>\d{4}).*"
+PROJECT_REPO_GIT_URL = "https://github.com/rayinuk13/homebrew-get.git"
+SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+COLOR_GREEN = "\033[32m"
+COLOR_RED = "\033[31m"
+COLOR_YELLOW = "\033[33m"
+COLOR_RESET = "\033[0m"
 
 BANNER = r"""
   __ _  ___| |_
@@ -42,6 +50,8 @@ def usage():
     print("  get --mp3 <url> [--quality 128|192|320]")
     print("  get --mp4 <url> [--quality 360-2160|4k]")
     print("  get --best <url>")
+    print("  get search \"query\"")
+    print("  get update")
     print("  get <playlist-url> --all")
     print("  get <playlist-url> --range 1-10")
     print("  get <url> --threads 5")
@@ -50,18 +60,47 @@ def usage():
     print("  get --mp3 https://youtube.com/watch?v=...")
     print("  get --mp4 --quality 1080 https://youtube.com/watch?v=...")
     print("  get --best https://youtube.com/watch?v=...")
+    print("  get search \"audiox\"")
+    print("  get update")
     print("  get https://youtube.com/playlist?list=... --range 1-10")
     sys.exit(0)
 
 
-def check_deps():
+def supports_color():
+    return sys.stdout.isatty() and os.environ.get("TERM", "").lower() != "dumb"
+
+
+def colorize(text, color):
+    if not supports_color():
+        return text
+    return f"{color}{text}{COLOR_RESET}"
+
+
+def log_success(message):
+    print(colorize(f"[get] {message}", COLOR_GREEN))
+
+
+def log_error(message):
+    print(colorize(f"[get] {message}", COLOR_RED))
+
+
+def log_warning(message):
+    print(colorize(f"[get] {message}", COLOR_YELLOW))
+
+
+def check_deps(require_ffmpeg=True, require_aria2=True):
     missing = []
-    for dep in ("yt-dlp", "ffmpeg"):
+    deps = ["yt-dlp"]
+    if require_ffmpeg:
+        deps.append("ffmpeg")
+    if require_aria2:
+        deps.append("aria2c")
+    for dep in deps:
         if not shutil.which(dep):
             missing.append(dep)
     if missing:
-        print(f"[get] missing dependencies: {', '.join(missing)}")
-        print("      install the missing tools with your system package manager.")
+        log_error(f"missing dependencies: {', '.join(missing)}")
+        log_warning("install the missing tools with your system package manager.")
         sys.exit(1)
 
 
@@ -83,7 +122,7 @@ def parse_args(args):
 
     selected_modes = [parsed.mp3, parsed.mp4, parsed.best]
     if sum(1 for mode in selected_modes if mode) > 1:
-        print("[get] error: choose only one format flag: --mp3, --mp4, or --best")
+        log_error("error: choose only one format flag: --mp3, --mp4, or --best")
         sys.exit(1)
 
     if parsed.mp3:
@@ -94,11 +133,11 @@ def parse_args(args):
         mode = "best"
 
     if parsed.playlist_all and parsed.playlist_range:
-        print("[get] error: use either --all or --range, not both")
+        log_error("error: use either --all or --range, not both")
         sys.exit(1)
 
     if parsed.threads < 1:
-        print("[get] error: --threads must be at least 1")
+        log_error("error: --threads must be at least 1")
         sys.exit(1)
 
     quality = parsed.quality
@@ -106,36 +145,36 @@ def parse_args(args):
         if quality is None:
             quality = DEFAULT_AUDIO_QUALITY
         elif quality not in VALID_AUDIO_QUALITIES:
-            print("[get] error: audio quality must be one of 128, 192, or 320")
+            log_error("error: audio quality must be one of 128, 192, or 320")
             sys.exit(1)
     elif quality is None:
         quality = MAX_VIDEO_HEIGHT if mode == "best" else DEFAULT_VIDEO_QUALITY
     elif quality.lower() == "4k":
         quality = MAX_VIDEO_HEIGHT
     elif not quality.isdigit():
-        print("[get] error: video quality must be a number between 360 and 2160, or 4k")
+        log_error("error: video quality must be a number between 360 and 2160, or 4k")
         sys.exit(1)
     else:
         quality_int = int(quality)
         if quality_int < 360 or quality_int > int(MAX_VIDEO_HEIGHT):
-            print("[get] error: video quality out of range; choose 360-2160 or 4k")
+            log_error("error: video quality out of range; choose 360-2160 or 4k")
             sys.exit(1)
 
     playlist_items = None
     if parsed.playlist_range:
         if parsed.playlist_range.count("-") != 1:
-            print("[get] error: --range must be in start-end format, e.g. 1-10")
+            log_error("error: --range must be in start-end format, e.g. 1-10")
             sys.exit(1)
         start, end = parsed.playlist_range.split("-", 1)
         if not start.isdigit() or not end.isdigit():
-            print("[get] error: --range values must be numeric (example: 1-10)")
+            log_error("error: --range values must be numeric (example: 1-10)")
             sys.exit(1)
         start_num, end_num = int(start), int(end)
         if start_num < 1:
-            print("[get] error: --range start must be >= 1")
+            log_error("error: --range start must be >= 1")
             sys.exit(1)
         if end_num < start_num:
-            print("[get] error: --range end must be >= start")
+            log_error("error: --range end must be >= start")
             sys.exit(1)
         playlist_items = f"{start_num}-{end_num}"
 
@@ -156,6 +195,10 @@ def build_command(config, out_dir):
         "--windows-filenames",
         "--add-metadata",
         "--progress",
+        "--downloader",
+        "aria2c",
+        "--downloader-args",
+        f"aria2c:-x{config['threads']} -s{config['threads']} -k1M",
         "--concurrent-fragments",
         str(config["threads"]),
     ]
@@ -229,16 +272,96 @@ def download(config):
     print()
 
     cmd = build_command(config, out_dir)
+    if sys.stdout.isatty():
+        label_text = colorize("downloading...", COLOR_YELLOW)
+        process = subprocess.Popen(cmd)
+        frame_idx = 0
+        spinner_frame_count = len(SPINNER_FRAMES)
+        while process.poll() is None:
+            sys.stdout.write(f"\r{SPINNER_FRAMES[frame_idx % spinner_frame_count]} {label_text}")
+            sys.stdout.flush()
+            frame_idx += 1
+            time.sleep(0.1)
+        sys.stdout.write("\r" + (" " * (len(label_text) + 4)) + "\r")
+        sys.stdout.flush()
+        return_code = process.returncode
+    else:
+        result = subprocess.run(cmd)
+        return_code = result.returncode
+    if return_code == 0:
+        log_success(f"✓ done — saved to {out_dir}/")
+    else:
+        log_error(f"✗ download failed (exit {return_code})")
+        sys.exit(return_code)
+
+
+def search_youtube(query):
+    cmd = [
+        "yt-dlp",
+        "--flat-playlist",
+        "--print",
+        "%(title)s\t%(id)s\t%(duration_string)s",
+        f"ytsearch10:{query}",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        log_error("search failed")
+        if result.stderr.strip():
+            log_warning(result.stderr.strip().splitlines()[-1])
+        sys.exit(result.returncode)
+
+    rows = [line for line in result.stdout.splitlines() if line.strip()]
+    if not rows:
+        log_warning("no results found")
+        return
+
+    log_success(f"results for \"{query}\":")
+    for idx, row in enumerate(rows, start=1):
+        parts = row.split("\t")
+        if len(parts) < 2:
+            continue
+        title = parts[0]
+        video_id = parts[1]
+        duration = parts[2] if len(parts) > 2 else ""
+        video_url = (
+            video_id
+            if video_id.startswith("http://") or video_id.startswith("https://")
+            else f"https://www.youtube.com/watch?v={video_id}"
+        )
+        duration_text = f" [{duration}]" if duration else ""
+        print(f"{idx:>2}. {title}{duration_text}")
+        print(f"    {video_url}")
+
+
+def update_app():
+    log_warning("updating get via pip...")
+    cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{PROJECT_REPO_GIT_URL}"]
     result = subprocess.run(cmd)
     if result.returncode == 0:
-        print(f"\n[get] ✓ done — saved to {out_dir}/")
-    else:
-        print(f"\n[get] ✗ download failed (exit {result.returncode})")
-        sys.exit(result.returncode)
+        log_success("update complete")
+        return
+    log_error("update failed")
+    log_warning("try one of these manually:")
+    print('  brew upgrade get')
+    print(f'  pip install --upgrade "git+{PROJECT_REPO_GIT_URL}"')
+    print("  npm install -g github:rayinuk13/homebrew-get")
+    sys.exit(result.returncode)
 
 
 def main():
-    config = parse_args(sys.argv[1:])
+    args = sys.argv[1:]
+    if args and args[0] == "update":
+        update_app()
+        return
+    if args and args[0] == "search":
+        if len(args) < 2:
+            log_error('error: search query required. Example: get search "audiox"')
+            sys.exit(1)
+        check_deps(require_ffmpeg=False, require_aria2=False)
+        search_youtube(" ".join(args[1:]))
+        return
+
+    config = parse_args(args)
     check_deps()
     download(config)
 
