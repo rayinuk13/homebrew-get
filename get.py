@@ -192,7 +192,7 @@ def build_command(config, out_dir):
             METADATA_YEAR_PATTERN,
             "--output",
             out_template,
-            config["url"],
+            normalized_url,
         ]
 
     height = MAX_VIDEO_HEIGHT if mode == "best" else config["quality"]
@@ -209,7 +209,7 @@ def build_command(config, out_dir):
         "--embed-thumbnail",
         "--output",
         out_template,
-        config["url"],
+        normalized_url,
     ]
 
 
