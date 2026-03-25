@@ -17,7 +17,7 @@ import subprocess
 import sys
 from urllib.parse import parse_qs, urlparse
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 DEFAULT_AUDIO_QUALITY = "192"
 DEFAULT_VIDEO_QUALITY = "1080"
 MAX_VIDEO_HEIGHT = "2160"
@@ -160,7 +160,8 @@ def build_command(config, out_dir):
         str(config["threads"]),
     ]
 
-    parsed_url = urlparse(config["url"])
+    normalized_url = config["url"] if "://" in config["url"] else f"https://{config['url']}"
+    parsed_url = urlparse(normalized_url)
     query = parse_qs(parsed_url.query)
     hostname = (parsed_url.hostname or "").lower()
     is_youtube_domain = (
