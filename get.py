@@ -26,7 +26,7 @@ VALID_AUDIO_QUALITIES = {"128", "192", "320"}
 DEFAULT_ARTIST = "Unknown Artist"
 DEFAULT_TITLE = "Unknown Title"
 METADATA_YEAR_PATTERN = r"upload_date:(?P<year>\d{4}).*"
-UPDATE_REPO_URL = "https://github.com/rayinuk13/homebrew-get.git"
+PROJECT_REPO_GIT_URL = "https://github.com/rayinuk13/homebrew-get.git"
 SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 COLOR_GREEN = "\033[32m"
@@ -276,8 +276,9 @@ def download(config):
         label_text = colorize("downloading...", COLOR_YELLOW)
         process = subprocess.Popen(cmd)
         frame_idx = 0
+        spinner_frame_count = len(SPINNER_FRAMES)
         while process.poll() is None:
-            sys.stdout.write(f"\r{SPINNER_FRAMES[frame_idx % len(SPINNER_FRAMES)]} {label_text}")
+            sys.stdout.write(f"\r{SPINNER_FRAMES[frame_idx % spinner_frame_count]} {label_text}")
             sys.stdout.flush()
             frame_idx += 1
             time.sleep(0.1)
@@ -334,7 +335,7 @@ def search_youtube(query):
 
 def update_app():
     log_warning("updating get via pip...")
-    cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{UPDATE_REPO_URL}"]
+    cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"git+{PROJECT_REPO_GIT_URL}"]
     result = subprocess.run(cmd)
     if result.returncode == 0:
         log_success("update complete")
@@ -342,7 +343,7 @@ def update_app():
     log_error("update failed")
     log_warning("try one of these manually:")
     print('  brew upgrade get')
-    print(f'  pip install --upgrade "git+{UPDATE_REPO_URL}"')
+    print(f'  pip install --upgrade "git+{PROJECT_REPO_GIT_URL}"')
     print("  npm install -g github:rayinuk13/homebrew-get")
     sys.exit(result.returncode)
 
