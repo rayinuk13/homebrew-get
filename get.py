@@ -161,7 +161,6 @@ def build_command(config, out_dir):
     ]
 
     normalized_url = config["url"] if "://" in config["url"] else f"https://{config['url']}"
-    download_url = normalized_url
     parsed_url = urlparse(normalized_url)
     query = parse_qs(parsed_url.query)
     hostname = (parsed_url.hostname or "").lower()
@@ -193,7 +192,7 @@ def build_command(config, out_dir):
             METADATA_YEAR_PATTERN,
             "--output",
             out_template,
-            download_url,
+            normalized_url,
         ]
 
     height = MAX_VIDEO_HEIGHT if mode == "best" else config["quality"]
@@ -210,7 +209,7 @@ def build_command(config, out_dir):
         "--embed-thumbnail",
         "--output",
         out_template,
-        download_url,
+        normalized_url,
     ]
 
 
