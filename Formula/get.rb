@@ -4,9 +4,9 @@
 class Get < Formula
   desc "Download YouTube videos and audio from the terminal"
   homepage "https://github.com/rayinuk13/homebrew-get"
-  url "https://github.com/rayinuk13/homebrew-get/archive/8e0f7aeb1723c8a62baaf7d5b545622a2afe2df5.tar.gz"
-  version "1.0.1"
-  sha256 "323b7e3f2016e9f05781bd09e1f9fd49202f23dfbfb38ab7d1628777bad211bb"
+  url "https://github.com/rayinuk13/homebrew-get/archive/14ede8f46c9785567ceb34421028e9bbd86134d6.tar.gz"
+  version "1.0.2"
+  sha256 "a89bdf99d5a212a88ecbe08fb06244e5da74282e3dab165804777381bef03888"
   license "MIT"
 
   depends_on "ffmpeg"
