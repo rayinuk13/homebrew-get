@@ -7,6 +7,7 @@ class Get < Formula
   url "https://github.com/rayinuk13/homebrew-get/archive/905bee4125b047a69f0623d4191109d3c530b9fb.tar.gz"
   version "1.1.0"
   sha256 "7075fbef55f692c6358230c0f1ff15ba56287c177299e900c360c8d64c8700cf"
+
   license "MIT"
 
   depends_on "aria2"
@@ -15,8 +16,11 @@ class Get < Formula
   depends_on "yt-dlp"
 
   def install
+    # ensure script uses the correct python version
     inreplace "get.py", "#!/usr/bin/env python3",
               "#!#{Formula["python@3.12"].opt_bin}/python3.12"
+
+    # install the script as `get` into Homebrew bin
     bin.install "get.py" => "get"
   end
 
