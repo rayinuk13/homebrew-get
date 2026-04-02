@@ -117,6 +117,9 @@ def parse_args(args):
     parser.add_argument("-h", "--help", action="store_true")
     parsed = parser.parse_args(args)
 
+    if parsed.url and len(parsed.url) > 1 and parsed.url[0] in ("'", '"') and parsed.url[0] == parsed.url[-1]:
+        parsed.url = parsed.url[1:-1]
+
     if parsed.help or not parsed.url:
         usage()
 
